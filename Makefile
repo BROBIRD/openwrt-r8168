@@ -1,4 +1,4 @@
-#Download realtek r8168 linux driver from official site [http://www.realtek.com/downloads/downloadsView.aspx?PNid=13&PFid=5&Level=5&Conn=4&DownTypeID=3]
+#Download realtek r8168 linux driver from official site [https://www.realtek.com/component/zoo/category/network-interface-controllers-10-100-1000m-gigabit-ethernet-pci-express-software]
 #Unpack source file
 #Replace orginal Makefile with this file
 #Put this source to 'package' folder of OpenWRT/LEDE SDK
