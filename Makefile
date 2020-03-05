@@ -8,7 +8,7 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=r8168
-PKG_VERSION:=8.046.00
+PKG_VERSION:=8.048.00
 PKG_RELEASE:=1
 
 #PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
@@ -20,7 +20,7 @@ include $(INCLUDE_DIR)/package.mk
 
 define KernelPackage/r8168
   TITLE:=Driver for Realtek r8168 chipsets
-  SUBMENU:=Realtek r8168 Drivers
+  SUBMENU:=Network Devices
   VERSION:=$(LINUX_VERSION)+$(PKG_VERSION)-$(BOARD)-$(PKG_RELEASE)
   FILES:= $(PKG_BUILD_DIR)/r8168.ko
   AUTOLOAD:=$(call AutoProbe,r8168)
