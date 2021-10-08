@@ -3249,8 +3249,9 @@ rtl8168_wait_txrx_fifo_empty(struct net_device *dev)
                         udelay(100);
                         if ((RTL_R8(tp, MCUCmd_reg) & (Txfifo_empty | Rxfifo_empty)) == (Txfifo_empty | Rxfifo_empty))
                                 break;
-
                 }
+
+                mdelay(1);
                 break;
         }
 }
@@ -3476,8 +3477,6 @@ rtl8168_nic_reset(struct net_device *dev)
 
         rtl8168_enable_rxdvgate(dev);
 
-        rtl8168_wait_txrx_fifo_empty(dev);
-
         switch (tp->mcfg) {
         case CFG_METHOD_1:
         case CFG_METHOD_2:
@@ -3523,6 +3522,8 @@ rtl8168_nic_reset(struct net_device *dev)
                 mdelay(10);
                 break;
         }
+
+        rtl8168_wait_txrx_fifo_empty(dev);
 
         /* Soft reset the chip. */
         RTL_W8(tp, ChipCmd, CmdReset);
@@ -8524,6 +8525,8 @@ rtl8168_set_mac_mcu_8168h_1(struct net_device *dev)
                 0xBD00, 0x0578, 0xC602, 0xBE00, 0x0000
         };
 
+        rtl8168_hw_disable_mac_mcu_bps(dev);
+
         for (i = 0; i < ARRAY_SIZE(mcu_patch_code_8168h_1); i++) {
                 rtl8168_mac_ocp_write(tp, 0xF800 + i * 2, mcu_patch_code_8168h_1[i]);
         }
@@ -8696,6 +8699,8 @@ rtl8168_set_mac_mcu_8168fp_2(struct net_device *dev)
                 0xBE00, 0x0000, 0xC602, 0xBE00, 0x0000
         };
 
+        rtl8168_hw_disable_mac_mcu_bps(dev);
+
         for (i = 0; i < ARRAY_SIZE(mcu_patch_code_8168fp_2); i++) {
                 rtl8168_mac_ocp_write(tp, 0xF800 + i * 2, mcu_patch_code_8168fp_2[i]);
         }
@@ -8734,6 +8739,8 @@ rtl8168_set_mac_mcu_8168fp_3(struct net_device *dev)
                 0xBE00, 0x0000, 0xC602, 0xBE00, 0x0000, 0xC602, 0xBE00, 0x0000, 0xC602,
                 0xBE00, 0x0000, 0xC602, 0xBE00, 0x0000, 0xC602, 0xBE00, 0x0000
         };
+
+        rtl8168_hw_disable_mac_mcu_bps(dev);
 
         for (i = 0; i < ARRAY_SIZE(mcu_patch_code_8168fp_3); i++) {
                 rtl8168_mac_ocp_write(tp, 0xF800 + i * 2, mcu_patch_code_8168fp_3[i]);
@@ -9311,14 +9318,11 @@ rtl8168_set_phy_mcu_patch_request(struct rtl8168_private *tp)
                 WaitCnt = 0;
                 do {
                         PhyRegValue = rtl8168_mdio_read(tp, 0x10);
-                        PhyRegValue &= 0x0040;
                         udelay(100);
                         WaitCnt++;
-                } while(PhyRegValue != 0x0040 && WaitCnt < 1000);
+                }  while (!(PhyRegValue & BIT_6) && (WaitCnt < 1000));
 
-                if (PhyRegValue != 0x0040 && WaitCnt == 1000) {
-                        retval = FALSE;
-                }
+                if (!(PhyRegValue & BIT_6) && (WaitCnt == 1000)) retval = FALSE;
 
                 rtl8168_mdio_write(tp,0x1f, 0x0000);
                 break;
@@ -9343,14 +9347,11 @@ rtl8168_clear_phy_mcu_patch_request(struct rtl8168_private *tp)
                 WaitCnt = 0;
                 do {
                         PhyRegValue = rtl8168_mdio_read(tp, 0x10);
-                        PhyRegValue &= 0x0040;
                         udelay(100);
                         WaitCnt++;
-                } while(PhyRegValue != 0x0040 && WaitCnt < 1000);
+                } while ((PhyRegValue & BIT_6) && (WaitCnt < 1000));
 
-                if (PhyRegValue != 0x0040 && WaitCnt == 1000) {
-                        retval = FALSE;
-                }
+                if ((PhyRegValue & BIT_6) && (WaitCnt == 1000)) retval = FALSE;
 
                 rtl8168_mdio_write(tp,0x1f, 0x0000);
                 break;
@@ -23724,6 +23725,19 @@ rtl8168_init_software_variable(struct net_device *dev)
                 case CFG_METHOD_32:
                 case CFG_METHOD_33:
                         tp->org_pci_offset_180 = rtl8168_csi_fun0_read_byte(tp, 0x214);
+                        break;
+                }
+
+                switch (tp->mcfg) {
+                case CFG_METHOD_21:
+                case CFG_METHOD_22:
+                case CFG_METHOD_23:
+                case CFG_METHOD_24:
+                case CFG_METHOD_25:
+                case CFG_METHOD_27:
+                case CFG_METHOD_28:
+                        if (tp->org_pci_offset_99 & BIT_2)
+                                tp->issue_offset_99_event = TRUE;
                         break;
                 }
         }
